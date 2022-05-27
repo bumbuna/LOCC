@@ -1,0 +1,16 @@
+name: locc-test
+on: [push]
+jobs:
+  run-locc-ctests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: get cmake
+    uses: jwlawson/actions-setup-cmake@v1.12
+    with:
+      cmake-version: latest
+    - name: run tests
+    run: cmake -B build
+    run: cmake --build build
+    run: cd build
+    run: ctest
