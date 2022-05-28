@@ -9,7 +9,7 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/test")
         enable_testing()
         function(locc_test depth)
                 add_test(NAME "lvl${depth}"
-                        COMMAND locc . ${depth}
+                        COMMAND locc . "-d${depth}"
                         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/test")
                         # set(res 200*${depth})
                         math(EXPR res "200*${depth}")

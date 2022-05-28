@@ -40,14 +40,23 @@ static char *TARGET_DIR = ".";
 #define PARENT_DIR  ".."
 #define abort(...) exit(__VA_ARGS__)
 #define save(f,c) printf("%s: %d\n", f, c)
-#define MAX_DEPTH 16
+#define MAX_DEPTH __INT_MAX__
 #define MIN_DEPTH 1
 #define SUPPORTED_TYPES 1
 #define C_KEY 1
 static int SESSION_DEPTH = MAX_DEPTH;
 static struct locrecord LOC_TBL[SUPPORTED_TYPES];
 static char READ_BUFFER[1024];
-
+#define OPT_STRING "d:"
+#define LOG(fatal, ...) \
+    do { \
+        fputs(fatal ? "E:" : "W:", stderr); \
+        fprintf(stderr, __VA_ARGS__); \
+        fatal ? exit(1) : 0; \
+    } while(0);
+#define ERROR 1
+#define WARNING 0
+#define USAGE "Usage: %s [options] [dir_path]\n"
 // static void (*store_locrecord)(enum FILE_TYPE, int);
 // static void (*foreach_locrecord)(void(*)(struct locrecord *));
 // static struct locrecord (*get_locrecord)(enum FILE_TYPE);
@@ -183,15 +192,31 @@ _exit:
 //Launch
 int main(int argc, char **argv) {
     PS();
-    if(argc >= 2) {
-        TARGET_DIR = argv[1];
+    int c;
+    opterr = 0;
+    while((c = getopt(argc, argv, OPT_STRING)) != -1) {
+        switch(c) {
+            case 'd': {
+                char *errptr = NULL;
+                SESSION_DEPTH = strtol(optarg, &errptr, 10);
+                if(*errptr || SESSION_DEPTH < 0) {
+                    LOG(ERROR, "-d option requires a positive integer argument\n");
+                }
+                SESSION_DEPTH =  SESSION_DEPTH >= MIN_DEPTH ?
+                                     SESSION_DEPTH : MIN_DEPTH;
+                D("depth: %d\n", SESSION_DEPTH);
+                break;
+            }
+            case '?': {
+                LOG(WARNING, "ignoring unknown -%c flag\n", optopt);
+                break;
+            }
+        }
     }
-    if(argc == 3) {
-        sscanf(argv[2], "%d", &SESSION_DEPTH);
-        SESSION_DEPTH = SESSION_DEPTH > MAX_DEPTH ? MAX_DEPTH : SESSION_DEPTH;
-        SESSION_DEPTH = SESSION_DEPTH < MIN_DEPTH ? MIN_DEPTH : SESSION_DEPTH;
+    if(optind >= argc) {
+        LOG(ERROR, USAGE, argv[0]);
     }
-    D("depth: %d\n", SESSION_DEPTH);
+    TARGET_DIR = argv[optind];
     traverse_dir(TARGET_DIR, 0);
     struct locrecord *r = locrecords_search(TYPE_C);
     printf("C: %d\n", r->loc);
